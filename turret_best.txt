@@ -12,8 +12,8 @@
 @persist Emitter_Scale
 @persist [DesiredAngle Angle]:angle Target:entity [Dist Delay Delay_off Sweep_speed Sweep_Margin LEFT_RIGHT_FOV]:number
 @persist [PREV VEL CUR]:number
-@persist [TargetVel PrevTargetPos CurrentTargetPos]:vector LastTargetUpdate:number ProjectileSpeed:number [Sensitivity_aim DebugMode Turret_off_ang Turret_sound_vol Debug_Shoot TurretPitch_Min TurretPitch_Max GunPitch_Min GunPitch_Max]:number
-@persist InterceptTime:number UseIntercept:number
+@persist [TargetVel PrevTargetPos CurrentTargetPos]:vector LastTargetUpdate:number [Sensitivity_aim DebugMode Turret_off_ang Turret_sound_vol Debug_Shoot TurretPitch_Min TurretPitch_Max GunPitch_Min GunPitch_Max]:number
+@persist UseIntercept:number
 @persist Sensitivity_sweep:number
 @persist Sensitivity_aim_Side:number Sensitivity_sweep_Side:number
 @persist AimDown:number AimDownTimer:number ReturnToCenter:number ReturnToCenterTimer:number
@@ -24,11 +24,8 @@
 @persist VelocityUpdateInterval:number
 @persist [VelHistory]:array VelHistoryIndex:number VelSamples:number
 @persist TargetAccel:vector PrevTargetVel:vector
-@persist BoltDrag:number
 @persist WeaponType:string # "bolt" or "hitscan"
-@persist HitscanPrediction:number HitscanMinSpeed:number HitscanTurnComp:number HitscanAccelComp:number HitscanMinLeadDist:number
-@persist BoltLeadMultiplier:number BoltExtraLeadBase:number BoltLeadMaxOffset:number
-@persist BoltGravityComp:number BoltProjectileDropComp:number BoltPredictionIterations:number
+@persist HitscanPrediction:number HitscanMinSpeed:number HitscanTurnComp:number HitscanAccelComp:number HitscanMinLeadDist:number 
 @persist [WhitelistPlayers WhitelistNPCs]:table
 @persist [TargetPlayers TargetNPCs TargetVehicles TargetCustom SharpNPCs]:table
 @persist HasValidTarget:number
@@ -65,7 +62,7 @@
 @persist Prev_Power_Available:number
 @persist Fire_Pending:number
 @persist ParticleChainActive:number ParticleDelay:number
-@persist U_D_POS:number EGP_Pos:vector EGP_ang:angle [Front_Back Left_Right]:number GunPivot_Pos:vector Gun_Offset:vector GunModel_Offset:vector
+@persist  EGP_Pos:vector EGP_ang:angle GunPivot_Pos:vector Gun_Offset:vector GunModel_Offset:vector
 @persist BaseEnt:entity
 @persist Missing_Warn_Interval:number
 @persist LastMissingWarnTime:number
@@ -164,9 +161,12 @@
 @persist BoltTrailCol:vector BoltTrailMat:string BoltTrailWidth:number BoltTrailLife:number
 @persist BoltModel:string BoltModelScale:vector BoltModelAngle:angle
 @persist BoltSpeedServerConfig:number # Server-side bolt speed config (change in-game via chat/console)
+@persist BoltLastInterceptPos:vector
+@persist BoltInterceptInitialized:number
+@persist Battery_Dock_Radius:number
+@persist Battery_Dock_Marker_Scale:number Up_Down_turn_plate:number Up_Down_turn_plate_Base:number Frint_back:number
 
-
-
+@persist [B_mat B_Model]:string
 @model models/props_junk/sawblade001a.mdl
 
 # Sweep_Mode 0 = classic sine, 1 = side-to-side with end pause. Sweep_speed 0 = sweep off.
@@ -219,6 +219,7 @@ if(0){
     EGP_PowerOn = 0
     EGP_CursorIdx = 0
     EGP_CursorHitIdx = 0
+    BoltInterceptInitialized = 0
     TurretHUD_EmitContentOffset = vec()
     MasterPower_Mode = 0
     EGP_SlotPwr = array()
@@ -331,6 +332,7 @@ if(0){
     Angle = ang()
     Target = noentity()
     Dist = 0
+   Battery_Dock_Radius = 0
     LEFT_RIGHT_FOV = 0
     Delay = 0
     Delay_off = 0
@@ -349,7 +351,6 @@ if(0){
     PrevTargetPos = vec()
     CurrentTargetPos = vec()
     LastTargetUpdate = 0
-    ProjectileSpeed = 0
     Sensitivity_aim = 0
     DebugMode = 0
     Turret_off_ang = 0
@@ -358,7 +359,6 @@ if(0){
     TurretPitch_Max = 0
     GunPitch_Min = 80
     GunPitch_Max = 150
-    InterceptTime = 0
     UseIntercept = 0
     Sensitivity_sweep = 0
     AimDown = 0
@@ -373,23 +373,16 @@ if(0){
     VelSamples = 0
     TargetAccel = vec()
     PrevTargetVel = vec()
-    BoltDrag = 0
     WeaponType = ""
-   
+   Up_Down_turn_plate = 0
+Up_Down_turn_plate_Base = 0
     HitscanPrediction = 0
     HitscanMinSpeed = 0
     HitscanTurnComp = 0
     HitscanAccelComp = 0
     HitscanMinLeadDist = 0
     HitscanBulletSpeed = 0
- 
-   BoltLeadMultiplier = 0
     DOWN_FOV = 0
-    
-    BoltExtraLeadBase = 0
-    BoltGravityComp = 0
-    BoltProjectileDropComp = 0
-    BoltPredictionIterations = 0
     WhitelistPlayers = table()
     WhitelistNPCs = table()
     TargetPlayers = table()
@@ -488,9 +481,8 @@ if(0){
     BatteryProfileScales = array()
     BatteryProfilePhysScales = array()
     BatteryProfileAngles = array()
-    U_D_POS = 0
-    Front_Back = 10
-    Left_Right = 0
+
+    
     GunPivot_Pos = vec()
     Gun_Offset = vec()
     GunModel_Offset = vec()
@@ -667,8 +659,8 @@ if(0){
     GrenadeChainActive = 0
     LastPewSound = 0
     LastGrenadeSound = 0
-    PewPewSoundDelay = 0.12
-    GrenadeSoundDelay = 0.35
+    PewPewSoundDelay = 0
+    GrenadeSoundDelay = 0
     MachineGunMode = 0
     Barrel_Count = 0
     Barrel_Radius = 0
@@ -703,7 +695,7 @@ if(0){
     LastGunResetTime = 0
     BatteryMarkedID = -1
     IsReloading = 0
-
+Frint_back = 0
    BoltMode = 0
 BoltDamage = 0
 BoltDelay = 0
@@ -718,6 +710,14 @@ BoltModel = ""
 BoltModelScale = vec(1,1,1)
 BoltModelAngle = ang(0,0,0)
 BoltGravity = 0
+Battery_Dock_Marker_Scale = 0
+LastBoltEnt = noentity()
+BoltSpeed = 0
+BoltGlow = 0
+LastBoltSound = 0
+Auto_Grenade_Fuse = 0
+Grenade_LandingExtra = 0 
+
 
 }
 
@@ -752,9 +752,11 @@ function void buildHolos(){
     holoParent(500, BaseEnt)
 
 
-    holoCreate(8500, BaseEnt:toWorld(vec(Front_Back,Left_Right,U_D_POS)), vec(0.8,0.8,0.1), BaseEnt:toWorld(ang()), vec(255), "models/holograms/cylinder.mdl")
+
+
+    holoCreate(8500, BaseEnt:toWorld(vec(Frint_back,0,Up_Down_turn_plate)), vec(0), BaseEnt:toWorld(ang()), vec(255), "cube")
     holoParent(8500, BaseEnt)
-    holoMaterial(8500, "models/props_canal/canal_bridge_railing_01a")
+
 
     holoCreate(8600, holoEntity(8500):toWorld(GunPivot_Pos), vec(0 ), holoEntity(8500):toWorld(ang(0,-90,0)), vec(255), "cube")
     holoParent(8600, holoEntity(8500))
@@ -768,6 +770,19 @@ function void buildHolos(){
 
     holoCreate(8888, BaseEnt:toWorld(Battery_Pos), vec(0.1,0.1,0.1), BaseEnt:toWorld(Battery_ang), vec(255), "cube")
     holoParent(8888, BaseEnt)
+
+    holoCreate(8887)
+    holoModel(8887, "hq_cylinder")
+    holoMaterial(8887, "models/debug/debugwhite")
+    holoColor(8887, vec(0, 255, 0))
+    holoAlpha(8887, 0)
+    holoScale(8887, vec(Battery_Dock_Radius * Battery_Dock_Marker_Scale, Battery_Dock_Radius * Battery_Dock_Marker_Scale, 0.1))
+    holoPos(8887, BaseEnt:toWorld(vec(28, 0, -BaseEnt:boxSize():z()/2 + 0.5)))
+    holoAng(8887, BaseEnt:angles())
+    holoParent(8887, BaseEnt)
+    holoDisableShading(8887, 1)
+    
+
 
     holoCreate(8889, holoEntity(8600):toWorld(vec(0,0,holoEntity(8600):boxSize():z()-14.45)), vec(0.3,0.2,0.3), holoEntity(8600):toWorld(ang(0,90,0)), vec(255), "models/props_wasteland/light_spotlight01_base.mdl")
     holoParent(8889, holoEntity(8500))
@@ -786,17 +801,19 @@ function void buildHolos(){
    
     if(Turret_Base == 1){
 
-    holoCreate(99999, BaseEnt:toWorld(vec(BaseEnt:boxSize():x()/2 + -13,0,-3)), vec(0.7), BaseEnt:toWorld(ang(0,0,0)), vec(255), "models/tur1/tur1.mdl")
+    holoCreate(99999, BaseEnt:toWorld(vec(BaseEnt:boxSize():x()/2 + -13,0,-1)), vec(1), BaseEnt:toWorld(ang(0,0,0)), vec(255), "models/tur1/tur1.mdl")
     holoParent(99999, BaseEnt)
     holoClipEnabled( 99999, 1 )
-    holoClip(99999, 1, vec(0,0, 22.55), vec(0,0, -1), 0)
-   
+    holoClip(99999, 1, vec(0,0, 31.88), vec(0,0, -1), 0)
+  
+ 
 }
 
     if(Turret_Base == 2){
     holoCreate(999992, BaseEnt:toWorld(vec(0,0,42)), vec(0.037,0.037,0.6), BaseEnt:toWorld(ang(0,0,0)), vec(255), "models/hunter/tubes/circle4x4.mdl")
     holoParent(999992, BaseEnt)
     holoMaterial(999992, "models/neatrotexture/metals/pattern5")
+    
     
     local HalfHeight6 = BaseEnt:boxSize():z() / 2.1
     local Offset7 = 0
@@ -815,7 +832,7 @@ holoParent(999999999, BaseEnt)
 
 
     # --- PRIMARY COG (drives the servo) ---
-    holoCreate(999888, holoEntity(8600):toWorld(vec(0,0,holoEntity(8600):boxSize():z()-19.34)), vec(0.4,0.4,0.08), holoEntity(8600):toWorld(ang(0,0,0)), vec(255), "models/gears/gear_24.mdl")
+    holoCreate(999888, holoEntity(8600):toWorld(vec(0,0,holoEntity(8600):boxSize():z()-28.0)), vec(0.4,0.4,0.1), holoEntity(8600):toWorld(ang(0,0,0)), vec(255), "models/gears/gear_24.mdl")
     holoParent(999888, holoEntity(8500))
 
     # muzzle reference holo (created last so 8600 already exists)
@@ -829,102 +846,91 @@ holoParent(999999999, BaseEnt)
     holoColor(5000, vec(255))
 
     # --- COUNTER COG ---
-    holoCreate(999887, holoEntity(9895):toWorld(vec(0,-1.5,-1.5)), vec(0.34,0.34,0.22), holoEntity(9895):toWorld(ang(0,0,0)), vec(255), "models/gears/gear_24.mdl")
+    holoCreate(999887, holoEntity(9895):toWorld(vec(0,-1.5,-10)), vec(0.34,0.34,0.22), holoEntity(9895):toWorld(ang(0,0,0)), vec(255), "models/gears/gear_24.mdl")
     holoParent(999887, holoEntity(9895))
+    
+    
+    
+    holoCreate(9998878, holoEntity(8500):toWorld(vec(0,0,Up_Down_turn_plate_Base)), vec(0.8,0.8,0.1), holoEntity(9998878):toWorld(ang()), vec(255), "models/holograms/cylinder.mdl")
+    holoParent(9998878, holoEntity(8500))
+    holoMaterial(9998878, "models/props_canal/canal_bridge_railing_01a")
+    
 }
 
-function vector calculateBoltIntercept(ShooterPos:vector, TargetPos:vector, TgtVel:vector, TgtAccel:vector, Speed:number){
+function vector calculateBoltIntercept(ShooterPos:vector, TargetPos:vector, TgtVel:vector, Speed:number){
     local RelativePos = TargetPos - ShooterPos
     local Distance = RelativePos:length()
 
-    if(Distance < 50){
-        InterceptTime = Distance / max(Speed, 1)
-        return TargetPos + TgtVel * InterceptTime * 0.3
-    }
-
     if(Speed <= 0){
-        InterceptTime = 0
+        #InterceptTime = 0 keep in case!
         return TargetPos
     }
 
-    if(TgtVel:length() < 10){
-        InterceptTime = Distance / Speed
+    if(Distance < 1){
+       # InterceptTime = 0 same for this keep in case!
         return TargetPos
     }
 
-    local DistanceFactor = clamp(Distance / 3000, 0.05, 1.0)
-
-    local EffectiveSpeed = Speed
-    if(BoltDrag < 1.0 && BoltDrag > 0){
-        local DragFactor = BoltDrag^(Distance / 100)
-        EffectiveSpeed = Speed * max(DragFactor, 0.5)
-    }
-
-    if(EffectiveSpeed <= 0){
-        EffectiveSpeed = Speed
+    if(TgtVel:length() < 1){
+        #InterceptTime = Distance / Speed #keep in case 
+        return TargetPos
     }
 
     local PredictedPos = TargetPos
-    local PrevTime = Distance / EffectiveSpeed
+    local PrevTime = Distance / Speed
 
-    for(I = 1, BoltPredictionIterations){
+    for(I = 1, 4){
         I = I
-        local PredictDist = (PredictedPos - ShooterPos):length()
-        local TimeToTarget = PredictDist / EffectiveSpeed
 
-        if(TimeToTarget <= 0 || TimeToTarget > 10){
+        local PredictDistance = (PredictedPos - ShooterPos):length()
+        local TimeToTarget = PredictDistance / Speed
+
+        if(TimeToTarget <= 0){
             TimeToTarget = PrevTime
+        }
+
+        if(TimeToTarget > 10){
+            TimeToTarget = 10
+        }
+
+        # Velocity-only prediction.
+        # Do NOT use TgtAccel here because acceleration noise
+        # causes the bolt aim point to jitter.
+
+        local NewPredictedPos = TargetPos + TgtVel * TimeToTarget
+
+        if(abs(TimeToTarget - PrevTime) < 0.001){
+            PredictedPos = NewPredictedPos
+            PrevTime = TimeToTarget
             break
         }
 
-        local RawPredicted = TargetPos + TgtVel * TimeToTarget
-
-        if(TgtAccel:length() > 0.5){
-            RawPredicted = RawPredicted + TgtAccel * TimeToTarget^2 * 0.5
-        }
-
-        if(BoltGravityComp > 0 && TimeToTarget > 0.1){
-            local GravityDrop = 386.4 * 0.01 * TimeToTarget^2 * 0.5
-            RawPredicted = RawPredicted + vec(0, 0, GravityDrop * BoltProjectileDropComp)
-        }
-
-        PredictedPos = TargetPos + (RawPredicted - TargetPos) * DistanceFactor
-
-        if(abs(TimeToTarget - PrevTime) < 0.01){
-            break
-        }
-
+        PredictedPos = NewPredictedPos
         PrevTime = TimeToTarget
     }
 
-    InterceptTime = PrevTime
+      #InterceptTime = PrevTime Keep tiul we fix 
 
-    if(BoltLeadMultiplier != 0.96){
-        local LeadVector = PredictedPos - TargetPos
-        local MaxLead = clamp(BoltLeadMaxOffset, 10, 250)
-        if(LeadVector:length() > MaxLead){
-            LeadVector = LeadVector:normalized() * MaxLead
-        }
-        PredictedPos = TargetPos + LeadVector * BoltLeadMultiplier
+    if(!BoltInterceptInitialized){
+        BoltLastInterceptPos = PredictedPos
+        BoltInterceptInitialized = 1
+        return PredictedPos
     }
 
-    if(TgtVel:length() > 200 && Distance > 2000){
-        local ExtraLead = BoltExtraLeadBase * (TgtVel:length() / 300) * (Distance / 3000)
-        local MaxExtraLead = clamp(BoltLeadMaxOffset * 0.5, 10, 150)
-        if(ExtraLead > MaxExtraLead){
-            ExtraLead = MaxExtraLead
-        }
-        PredictedPos = PredictedPos + TgtVel:normalized() * ExtraLead
+    local InterceptChange = (PredictedPos - BoltLastInterceptPos):length()
+
+    if(InterceptChange < 4){
+        return BoltLastInterceptPos
     }
 
-    local PredictedDistance = (PredictedPos - ShooterPos):length()
-    if(PredictedDistance > Distance * 3 || PredictedDistance < Distance * 0.3){
-        InterceptTime = Distance / Speed
-        return TargetPos
-    }
+    local BoltSmooth = 0.25
 
-    return PredictedPos
+    BoltLastInterceptPos = BoltLastInterceptPos
+        + (PredictedPos - BoltLastInterceptPos) * BoltSmooth
+
+    return BoltLastInterceptPos
 }
+
 
 function vector calculateHitscanIntercept(TargetPos:vector, TgtVel:vector, TgtAccel:vector){
     if(TgtVel:length() < HitscanMinSpeed){
@@ -971,7 +977,7 @@ function vector calculateHitscanIntercept(TargetPos:vector, TgtVel:vector, TgtAc
         PredictedPos = PredictedPos + LateralAccel * PredictTime^2 * HitscanAccelComp
     }
 
-    InterceptTime = PredictTime
+   # InterceptTime = PredictTime #keep til fixed
 
     return PredictedPos
 }
@@ -1296,6 +1302,19 @@ function void hideAmmoDockMarker() {
     stoptimer(TimerPrefix + "ammo_dock_scan")
 }
 
+function void showBatteryDockMarker() {
+    if(holoEntity(8887):isValid()) {
+        holoAlpha(8887, 255)
+    }
+}
+
+function void hideBatteryDockMarker() {
+    if(holoEntity(8887):isValid()) {
+        holoAlpha(8887, 0)
+    }
+}
+
+
 # Actual left/right half-angle the turret really sweeps to (LEFT_RIGHT_FOV is the
 # total L/R spread, margin trims the sweep ends). This is the REAL L/R aim envelope
 # - used everywhere a target is acquired, retained, or drawn. Up/down uses UP_FOV /
@@ -1534,18 +1553,20 @@ function void recoverBattery() {
     }
 
     # Already have a good seated battery - nothing to do
-    if(BatteryEnt:isValid() && !batteryNeedsRepos()){ return }
-
+    if(BatteryEnt:isValid() && !batteryNeedsRepos()){ hideBatteryDockMarker() return }
     # Have a battery but it drifted / lost parent / survived a chip reset:
     # snap it back onto holo 8888 (parent stays BaseEnt/chip, not the holo).
     if(BatteryEnt:isValid() && !isMountedByOtherTurret(BatteryEnt)) {
         if(holoEntity(8888):isValid()) {
             repositionBatteryOnly(BatteryEnt)
         }
+        hideBatteryDockMarker()
         return
     }
-
+    
+    
     # No usable BatteryEnt yet - search nearby (unwired / auto-find path)
+     showBatteryDockMarker()
     BatteryEnt = noentity()
     local SearchFrom = BaseEnt:isValid() ? BaseEnt:pos() : entity():pos()
     if(findCanQuery()) {
@@ -1557,7 +1578,7 @@ function void recoverBattery() {
         if(Gun:isValid()) { findExcludeEntity(Gun) }
         if(Prop:isValid()) { findExcludeEntity(Prop) }
         if(BaseEnt:isValid()) { findExcludeEntity(BaseEnt) }
-        findInSphere(SearchFrom, 400)
+        findInSphere(SearchFrom, Battery_Dock_Radius)
         findSortByDistance(SearchFrom)
         local Arr = findToArray()
         local Batt = noentity()
@@ -1582,8 +1603,9 @@ function void recoverBattery() {
             }
         }
 
-        if(Batt:isValid()) {
+             if(Batt:isValid()) {
             BatteryEnt = Batt
+            hideBatteryDockMarker()
             printColor(vec(0,255,200), "[BATTERY] Auto-found nearby battery: " + Batt:model())
             if(holoEntity(8888):isValid()) {
                 repositionBatteryOnly(Batt)
@@ -1672,6 +1694,17 @@ function void disableGunAssemblyCollision(){
 
 }
 
+
+function number angDiffAbs(A:number, B:number){
+    local D = A - B
+    while(D > 180){ D -= 360 }
+    while(D < -180){ D += 360 }
+    return abs(D)
+}
+
+
+
+
 function void parentGun(){
     if(!Gun:isValid() || !holoEntity(8601):isValid()){ return }
     if(isMountedByOtherTurret(Gun)){ return }
@@ -1731,6 +1764,26 @@ function entity magRefHolo(){
     return Gun
 }
 
+
+
+function number magNeedsRepos(){
+    if(!MagSeated || !MagEnt:isValid() || !Gun:isValid()){ return 0 }
+    local AmmoIndex = clamp(AmmoProfile, 1, max(AmmoModels:count(), 1))
+    if(AmmoModels:count() >= AmmoIndex && MagEnt:model() != AmmoModels[AmmoIndex, string]){ return 1 }
+    if(MagEnt:parent() != Gun){ return 1 }
+    local Ref = magRefHolo()
+    if(!Ref:isValid()){ Ref = Gun }
+    if(MagEnt:pos():distance(Ref:toWorld(MaG_PoS)) > 25){ return 1 }
+    local CurA = MagEnt:angles()
+    local ProfileAng = AmmoProfileAngles:count() >= AmmoIndex ? AmmoProfileAngles[AmmoIndex, angle] : ang()
+    local WantA = Ref:toWorld(Mag_Ang + ProfileAng)
+    if(angDiffAbs(CurA:pitch(), WantA:pitch()) > 2){ return 1 }
+    if(angDiffAbs(CurA:yaw(), WantA:yaw()) > 2){ return 1 }
+    if(angDiffAbs(CurA:roll(), WantA:roll()) > 2){ return 1 }
+    return 0
+}
+
+#[
 # Returns 1 if the seated ammo box is out of place versus the current per-mode
 # config - checks parent, POSITION and ANGLE. Comparing angle too is what lets a
 # MagAng0/1 change actually reposition the box (previously only position was
@@ -1751,6 +1804,7 @@ function number magNeedsRepos(){
     if(abs(CurA:roll() - WantA:roll()) > 2){ return 1 }
     return 0
 }
+]#
 
 function void updateLightBaseParent() {
     if(!holoEntity(1050):isValid()) { return }
@@ -1938,7 +1992,7 @@ function void resetTracking(){
     PrevTargetPos = vec()
     CurrentTargetPos = vec()
     LastTargetUpdate = 0
-    InterceptTime = 0
+   # InterceptTime = 0
     VelHistory = array()
     VelHistoryIndex = 1
 }
@@ -3827,31 +3881,37 @@ function void updateKinematics(){
         TargetVel = Target:vel()
         PrevTargetVel = TargetVel
     }
+    
+if(UseIntercept){
+    local InterceptPos = CurrentTargetPos
 
-    if(UseIntercept){
-        local InterceptPos = CurrentTargetPos
-        if(WeaponType == "bolt" && ProjectileSpeed > 0){
-            # Hybrid lead logic: keep the lock on the real target, but apply a
-            # clamped predicted lead for shot direction so the turret doesn't
-            # jitter or chase its own projection every tick.
-            if(TargetVel:length() > 1){
-                local ShootingPoint = holoEntity(4580):isValid() ? holoEntity(4580):pos() : Gun:pos()
-                local PredictedPos = calculateBoltIntercept(ShootingPoint, CurrentTargetPos, TargetVel, TargetAccel, ProjectileSpeed)
-                local LeadDelta = PredictedPos - CurrentTargetPos
-                local MaxLead = clamp(BoltLeadMaxOffset, 10, 250)
-                if(LeadDelta:length() > MaxLead){
-                    LeadDelta = LeadDelta:normalized() * MaxLead
-                }
-                InterceptPos = CurrentTargetPos + LeadDelta
-                if(BoltLeadMultiplier != 1.0){
-                InterceptPos = CurrentTargetPos + LeadDelta
-                }
+    if(WeaponType == "bolt" && BoltSpeed > 0){
+        if(TargetVel:length() > 1){
+            local ShootingPoint = Gun:pos()
+
+            if(holoEntity(4583):isValid()){
+                ShootingPoint = holoEntity(4583):pos()
             }
-        }elseif(WeaponType == "hitscan"){
-            InterceptPos = calculateHitscanIntercept(CurrentTargetPos, TargetVel, TargetAccel)
+
+   InterceptPos = calculateBoltIntercept(
+    ShootingPoint,
+    CurrentTargetPos,
+    TargetVel,
+    BoltSpeed
+)
+            
+            
         }
-        TargetLocation = InterceptPos
+    }elseif(WeaponType == "hitscan"){
+        InterceptPos = calculateHitscanIntercept(CurrentTargetPos, TargetVel, TargetAccel)
     }
+
+    TargetLocation = InterceptPos
+}
+
+
+
+
 
     if(DebugMode == 1){
         holoPos(2, TargetLocation)
@@ -4710,7 +4770,7 @@ function void applyTurretState(Desired:number){
     if(Desired){
         if(Power_Available){
             printColor(vec(0,255,0), "Turret is ARMED! (Battery: " + round(Battery_Percent) + "%)")
-            BaseEnt:emitSound("@hl1/fvox/activated.wav", 80, 80, 0.8)
+            BaseEnt:emitSound("@npc/turret_floor/turret_deploy_4.wav", 80, 100, 0.25)
             AimDown = 0
             ReturnToCenter = 1
             ReturnToCenterTimer = curtime() + TurnOn_Delay
@@ -4736,7 +4796,7 @@ function void applyTurretState(Desired:number){
         }
     }else{
         printColor(vec(255,0,0), "Turret is OFFLINE!")
-        BaseEnt:emitSound("@hl1/fvox/deactivated.wav", 80, 80, 0.8)
+        BaseEnt:emitSound("@npc/turret_floor/turret_disabled_4.wav", 80, 100, 0.25)
         AimDown = 1
         AimDownTimer = curtime() + TurnOff_Delay
         ReturnToCenter = 0
@@ -6226,18 +6286,19 @@ if(duped() | dupefinished()){
 
 if(first() || dsClk(DS_ResetName)){
     print("Broadcasting reset signal...")
-    Turret_Base = 0
+    Turret_Base = 1
+
+
 if (Turret_Base == 1) {
-    entity():setAlpha(0)   # Fully invisible
-} else {
-    entity():setAlpha(255) # Fully visible
+    entity():propDraw(0)   # Fully invisible
 }
 
-
 if (Turret_Base == 2) {
-    entity():setAlpha(0)   # Fully invisible
-} else {
-    entity():setAlpha(255) # Fully visible
+    entity():propDraw(0)   # Fully invisible
+}else{
+    
+    entity():propDraw(1)   # Fully invisible    
+    
 }
 
 
@@ -6273,9 +6334,12 @@ if (Turret_Base == 2) {
     if(!Base:isValid()){
         printColor(vec(255,255,0), "No Base wired - using this E2 chip as the base reference.")
     }
-    U_D_POS = 44.25
-    Front_Back = 0
-    Left_Right = 0
+
+
+    Up_Down_turn_plate = 36
+    Up_Down_turn_plate_Base = -5
+    Frint_back = 5
+
     # Gun elevation pivot (the white cube, holo 8600) sits this offset from the
     # yaw base plate (holo 8500). Z = how high the gun pivots up/down. x/y shift
     # it forward/back/sideways. The whole gun + its parts pivot from this point.
@@ -6290,13 +6354,13 @@ if (Turret_Base == 2) {
     # holo 20, so they ride with it as one assembly. Z = up/down.
     GunModel_Offset = vec(0, 0, -1.54)
     
-    EGP_Pos = vec(-8,0,28)
+    EGP_Pos = vec(-12,0,26)
     EGP_ang = ang(128.8,0,180)
    
     Recharge_station_Pos = vec(0,0,0)
     Recharge_station_ang = ang(0,0,0)
     
-    Battery_Pos = vec(12,0,40)
+    Battery_Pos = vec(12,0,0)
     Battery_ang = ang(0,0,0)
     Battery_Scale = 0.4
     Battery_Scale_Main = vec(0.4,0.4,0.4)
@@ -6328,7 +6392,14 @@ if (Turret_Base == 2) {
     # couple seconds (recovery still running) does not hard-latch Battery_Shutdown.
     JustReset = curtime() + 4.0
 
-    buildHolos()
+  Battery_Dock_Radius = 400
+Battery_Dock_Marker_Scale = 0.003
+
+buildHolos()
+
+# Show the empty battery dock immediately on initial spawn.
+showBatteryDockMarker()
+
 
     # ---- lambda timer rates (seconds) ----
     Aim_Rate    = 0.015   # aim + fire control, ~66 Hz (was interval(20) = 50 Hz)
@@ -6572,7 +6643,8 @@ if (Turret_Base == 2) {
     #      turret, each toggling its own turret. Master button is hidden.
     # Change this value to pick which power style the shared screen uses.
     MasterPower_Mode = 1
-
+ 
+    
     Recharge_Range_Default = 80
     StationErrorInterval = 8
     LastStationErrorTime = 0
@@ -6591,7 +6663,7 @@ if (Turret_Base == 2) {
     LastMissingWarnTime = 0
 
     # ---- weapon ----
-    WeaponType = "bolt"  #hitscan or bolt
+    WeaponType = "hitscan"  #hitscan or bolt
     # Hitscan = instant round, so ALL of this is just tracking-lag compensation,
     # NOT bullet travel. Too much = overshoot (you're now at 0.4 -> overshooting).
     HitscanPrediction = 0.12   # base lead time (s). Start low (0.05-0.15). Only raise if rounds land BEHIND a steady-moving target.
@@ -6601,16 +6673,8 @@ if (Turret_Base == 2) {
     HitscanMinLeadDist = 500   # lead is ramped DOWN for close targets: at this distance full lead kicks in, closer = less (fixes aiming way ahead of nearby flyers)
     HitscanBulletSpeed = 0    # 0 = treat as instant hitscan. Set to your gun's real bullet speed (units/s) if it isn't.
 
-
-   ProjectileSpeed = 6800
-    BoltDrag = 0.99
-    BoltGravityComp = 0
-    BoltProjectileDropComp = 0
-    BoltPredictionIterations = 2
-   BoltLeadMultiplier = 0.75
-    BoltExtraLeadBase = 10
-   BoltLeadMaxOffset = 90
    UseIntercept = 1
+    
     VelSamples = 3              # velocity smoothing: 2 = snappiest lead, 4 = smoother
     VelocityUpdateInterval = 0
     DebugMode = 0
@@ -6957,7 +7021,7 @@ event chat(Player:entity, Message_Raw:string, Team:number){
                     hideChat(1)
                     BoltSpeedServerConfig = clamp(Args[2,string]:toNumber(), 100, 20000)
                     BoltSpeed = BoltSpeedServerConfig
-                    ProjectileSpeed = BoltSpeedServerConfig
+                   # ProjectileSpeed = BoltSpeedServerConfig
                     printColor(vec(0,255,0), "Bolt speed set to " + BoltSpeedServerConfig)
                 }
                 elseif(Args[1,string] == "!priority" && Args:count() >= 2){
@@ -7193,7 +7257,7 @@ if(first()) {
 
     Max_rounds = 4500
     Ammo_Dock_Radius = 300
-
+    Ammo_Dock_Marker_Scale = 0.0047
     recoverAmmoBox()
 
     # ---- Robust wired-box recovery (mirrors what the simple standalone
@@ -7315,8 +7379,36 @@ if(first()) {
         local E = entity(PreResetMagIndex)
         if(E:isValid()) { MagEnt = E }
     }
-    
+   
+
+if(!HadMagOnReset && !MagEnt:isValid()) { 
+    MagSeated = 0
+    Ammo_EjectedEnt = noentity() 
+    MagEnt = noentity() 
+    MagEntIndex = 0 
+    showAmmoDockMarker()
+    printColor(vec(255,200,0), "[AMMO] No valid mag after reset - dock scan will start after grace") 
+} else { 
+    MagSeated = 1 
+    Ammo_Waiting_For_Prop = 0 
+    stoptimer(TimerPrefix + "ammo_dock_scan") 
+    hideAmmoDockMarker() 
+    if(MagEnt:isValid()) { MagEntIndex = MagEnt:id() } 
+    if(PreResetAmmoCount > 0) {  
+        Ammo_Count = PreResetAmmoCount 
+        Max_Ammo = floor(Max_rounds)  
+    } else {  
+        Ammo_Count = floor(Max_rounds) 
+        Max_Ammo = floor(Max_rounds)  
+    } 
+    printColor(vec(0,255,100), "[AMMO] Mag recovered on reset (index " + MagEntIndex + ", ammo " + Ammo_Count + ")") 
+}
+
+
+
+ #[
     if(!HadMagOnReset && !MagEnt:isValid()) {
+        showAmmoDockMarker()
         MagSeated = 0
         Ammo_Waiting_For_Prop = 1
         Ammo_EjectedEnt = noentity()
@@ -7338,7 +7430,7 @@ if(first()) {
             Max_Ammo = floor(Max_rounds) 
         }
         printColor(vec(0,255,100), "[AMMO] Mag recovered on reset (index " + MagEntIndex + ", ammo " + Ammo_Count + ")")
-    }
+    }]#
 
     # --- Lamp reset recovery (mirrors the ammo box) ---
     # Determine whether a lamp was mounted before the reset so we can reseat it.
@@ -7386,7 +7478,7 @@ if(first()) {
     Heat_Min = 10
     Heat_Combat = 60
 
-    PewPew = 0
+    PewPew = 1
     Print_ammo_on_hud = 1
     Debug_Mode = 1
     GrenadeMode = 0
@@ -7400,14 +7492,16 @@ if(first()) {
     Auto_Grenade_Fuse = 1
     
     # ---- Real Bolt system (AntCore shootBolt) ----
-BoltMode          = 1
+BoltMode          = 0
 BoltDamage        = 400
 BoltDelay         = 0.077
 BoltSoundDelay    = 0.12
-BoltSound         = "@npc/sniper/echo1.wav"
+BoltSound         = "@npc/turret_floor/shoot1.wav"
+BoltLastInterceptPos = vec(0) #dont touch
+BoltInterceptInitialized = 0  #dont touch
 
 # Per-shot bolt flight + look (AntCore). Speed also drives lead prediction.
-BoltSpeed         = 6000
+BoltSpeed         = 7800
 BoltGravity       = 0            # 0 = straight flight; positive values add drop
 BoltGlow          = 0
 
@@ -7420,18 +7514,16 @@ BoltMuzzlePosA = array(vec(80, 0, 6.2), vec(80, 0, 6.2))
 BoltMuzzleAngA = array(ang(0, 0, 0), ang(0, 0, 0))
 
 # Server config for bolt speed - change this in-game to adjust speed
-BoltSpeedServerConfig = 6000
+BoltSpeedServerConfig = BoltSpeed
 
 BoltTrailMat      = "effects/beam_generic01"        # "" = no trail
-BoltTrailCol      = vec(180, 180, 180)
-BoltTrailWidth    = 0.24
+BoltTrailCol      = vec(180, 180, 0)
+BoltTrailWidth    = 0.25
 BoltTrailLife     = 0.35
-BoltModel         = "models/weapons/kolek.mdl"                    # "" = stock crossbow_bolt model
-BoltModelScale    = vec(0.22,0.25,0.25)  # visual scale only; collision remains bolt-sized
+BoltModel         = "models/weapons/stick_phy.mdl"                    # "" = stock crossbow_bolt model
+BoltModelScale    = vec(0.3,0.6,0.6)  # visual scale only; collision remains bolt-sized
 BoltModelAngle    = ang(0,0,0)  # visual rotation offset; leave at zero for straight models
 
-# MUST match BoltSpeed so lead prediction is accurate
-ProjectileSpeed   = BoltSpeedServerConfig
     
     
 
@@ -7678,7 +7770,7 @@ Enable_Bolts = 0 #bolts for another Barrel
     Dot_scale_sphere = vec(0.05)
     Dot_scale_Cam = 0.03
     Dot_scale = 0.001
-    Beam_On = 1
+    Beam_On = 0
     Dot_Enable_Holo = 0
 
 
@@ -7707,9 +7799,14 @@ Enable_Bolts = 0 #bolts for another Barrel
     
     
     Barrel_type = 3
+  
+#---multi barrel type config---#
     Barrel_Count = 7
     Barrel_Radius = 1.5
     Barrel_Scale = vec(0.02, 0.02, 0.05)
+    B_mat = "sprops/textures/sprops_chrome2"
+    B_Model = "models/hunter/tubes/tube1x1x8.mdl"
+#-----------------------------#    
     GUN_END = 4
     
     LastClickTime = 0
@@ -8116,9 +8213,11 @@ MuzzleFlash_Enabled = 1
             for(I=0,Barrel_Count-1){
                 local F = 99 + I
                 local Angle = I * (360 / Barrel_Count)
-                holoCreate(F,holoEntity(60000002):toWorld(vec(cos(Angle)*Barrel_Radius,sin(Angle)*Barrel_Radius,0)),Barrel_Scale,holoEntity(60000002):toWorld(ang(0,0,0)),vec4(255,255,255,255),"models/hunter/tubes/tube1x1x8.mdl")
+                holoCreate(F,holoEntity(60000002):toWorld(vec(cos(Angle)*Barrel_Radius,sin(Angle)*Barrel_Radius,0)),Barrel_Scale,holoEntity(60000002):toWorld(ang(0,0,0)),vec4(255,255,255,255),B_Model)
                 holoParent(F,holoEntity(60000002))
-                holoMaterial(F,"phoenix_storms/fender_chrome")
+                holoMaterial(F,B_mat)
+                
+                
             }
         }
 
@@ -8256,7 +8355,7 @@ MuzzleFlash_Enabled = 1
     holoMaterial(5602, "models/debug/debugwhite")
     holoColor(5602, vec(0, 255, 0))
     holoAlpha(5602, 0)
-    holoScale(5602, vec(1.4, 1.4, 0.1))
+    holoScale(5602, vec(Ammo_Dock_Radius * Ammo_Dock_Marker_Scale, Ammo_Dock_Radius * Ammo_Dock_Marker_Scale, 0.1))
     holoPos(5602, holoEntity(56):pos())
     holoAng(5602, holoEntity(56):angles())
     holoParent(5602, holoEntity(56))
@@ -8268,12 +8367,12 @@ MuzzleFlash_Enabled = 1
             if(holoEntity(5601):isValid()) { 
                 holoAlpha(5601, 0)
                 holoColor(5601, vec(0, 255, 255))
-                holoScale(5601, vec(1.0, 1.25, 1.0)) 
+                holoScale(5602, vec(1.4, 1.4, 0.1))
             }
             if(holoEntity(5602):isValid()) { 
                 holoAlpha(5602, 255)
                 holoColor(5602, vec(0, 255, 0))
-                holoScale(5602, vec(1.4, 1.4, 0.1)) 
+                holoScale(5602, vec(Ammo_Dock_Radius * Ammo_Dock_Marker_Scale, Ammo_Dock_Radius * Ammo_Dock_Marker_Scale, 0.1))
             }
         } else {
             if(holoEntity(5601):isValid()) { holoAlpha(5601, 0) }
